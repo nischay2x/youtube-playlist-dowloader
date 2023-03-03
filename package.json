@@ -1,0 +1,17 @@
+{
+  "name": "ytm-dl",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "string-to-json-online.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "fluent-ffmpeg": "^2.1.2",
+    "ytdl-core": "^4.11.2"
+  }
+}
