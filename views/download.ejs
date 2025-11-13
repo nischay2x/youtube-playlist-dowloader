@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+
+    <title><%= playlistName %> | Youtube Music Playlist Downloader</title>
+    <style>
+      .status span {
+        display: none;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+      }
+      .status .pending {
+        background-color: transparent;
+      }
+      .status .success {
+        background-color: green;
+      }
+      .status .error {
+        background-color: red;
+      }
+      .list-group-item-warning .status .pending {
+        display: inline-block;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        border: 4px solid #fff;
+        border-top: 4px solid rgba(255, 255, 255, 0.3);
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      .list-group-item-success .status .success {
+        display: inline-block;
+      }
+      .list-group-item-danger .status .error {
+        display: inline-block;
+      }
+    </style>
+  </head>
+  <body>
+
+    <div class="container mt-5">
+      <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+          <h1 class="display-4 mb-3"><%= playlistName %></h1>
+          <ul class="list-group mt-4">
+            <% if (playlistItems && playlistItems.length > 0) { %>
+              <% playlistItems.forEach(function(item, idx) { %>
+                <li id="<%= item.videoId %>" class="list-group-item d-flex align-items-center">
+                  <span class="badge badge-primary mr-3"><%= idx + 1 %></span>
+                  <img src="<%= item.thumbnail %>" alt="thumbnail" class="mr-3" style="width:60px;height:60px;object-fit:cover;border-radius:6px;">
+                  <div class="text-left">
+                    <a href="<%= item.link %>" target="_blank" rel="noopener noreferrer">
+                      <strong><%= item.title %></strong>
+                    </a><br>
+                    <small>Video ID: <%= item.videoId %></small>
+                  </div>
+                  <div class="ml-auto status">
+                    <span class="pending"></span>
+                    <span class="success">✅</span>
+                    <span class="error">❌</span>
+                  </div>
+                </li>
+              <% }) %>
+            <% } else { %>
+              <li class="list-group-item">No items found in this playlist.</li>
+            <% } %>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // estables event source for real-time updates
+      const eventSource = new EventSource('/sse');
+
+      eventSource.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        const listItem = document.getElementById(data.id);
+        if (listItem) {
+          if (data.status === "downloading") {
+            listItem.classList.add("list-group-item-warning");
+          } else if (data.status === "downloaded") {
+            listItem.classList.remove("list-group-item-warning");
+            listItem.classList.add("list-group-item-success");
+          } else if (data.status === "error") {
+            listItem.classList.remove("list-group-item-warning");
+            listItem.classList.add("list-group-item-danger");
+          }
+        }
+      };
+    </script>
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+  </body>
+</html>

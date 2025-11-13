@@ -1,9 +1,9 @@
 {
   "name": "ytm-dl",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "",
   "type": "module",
-  "main": "string-to-json-online.js",
+  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -11,7 +11,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "fluent-ffmpeg": "^2.1.2",
-    "ytdl-core": "^4.11.2"
+    "@distube/ytdl-core": "^4.16.12",
+    "axios": "^1.13.2",
+    "ejs": "^3.1.10",
+    "express": "^5.1.0",
+    "fluent-ffmpeg": "^2.1.3",
+    "google-auth-library": "^10.5.0",
+    "youtube-dl-exec": "^3.0.26"
   }
 }

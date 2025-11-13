@@ -1,0 +1,13 @@
+{
+    "web": {
+        "client_id": "266096145496-adk2qdp9vr90ssdsderefmcaq1kap6r6s1.apps.googleusercontent.com",
+        "project_id": "ytm-download",
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "token_uri": "https://oauth2.googleapis.com/token",
+        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+        "client_secret": "PODXCS-mjaqoy1vtuII_uDc234DEzi97y",
+        "redirect_uris": [
+            "http://localhost:5000/auth/callback/google"
+        ]
+    }
+}
