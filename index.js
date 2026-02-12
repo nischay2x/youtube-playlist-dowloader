@@ -88,8 +88,8 @@ app.post("/download", async (req, res) => {
     await fsp.mkdir(`downloads/${playlistName.replace(/[<>:"\/\\|?*]+/g, '_')}`, { recursive: true });
 
     for (let i = 0; i < playlistItems.length; i++) {
-      broadcastMessage({ index: i, id: item.videoId, title: item.title, status: "downloading" });
       const item = playlistItems[i];
+      broadcastMessage({ index: i, id: item.videoId, title: item.title, status: "downloading" });
       try {
         await download(item.link, `downloads/${playlistName.replace(/[<>:"\/\\|?*]+/g, '_')}/${item.title}.mp3`);
         console.log(`Downloaded: ${item.title}`);
@@ -107,6 +107,40 @@ app.post("/download", async (req, res) => {
   }
 
 });
+
+app.get("/single", async (req, res) => {
+  const { v, name } = req.query;
+
+  const url = `https://www.youtube.com/watch?v=${v}`;
+  res.sendStatus(200);
+
+  console.log(`Downloading Single: ${name}`);
+  
+  await download(url, `downloads/singles/${name}.mp3`);
+  console.log(`Downloaded Single: ${name}`);
+  
+});
+
+app.get("/single-form", async(req, res) => {
+  return res.render('single');
+});
+
+app.post("/single-form", async (req, res) => {
+  const { url, name } = req.body;
+
+  const qp = new URL(url);
+  const videoId = qp.searchParams.get("v");
+
+  res.sendStatus(200);
+
+  console.log(`Downloading Single: ${name}`);
+  
+  const dUrl = `https://www.youtube.com/watch?v=${videoId}`;
+  
+  await download(dUrl, `downloads/singles/${name}.mp3`);
+  console.log(`Downloaded Single: ${name}`);
+
+})
 
 app.get("/auth/callback/google", async (req, res) => {
   const code = req.query.code;
