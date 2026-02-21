@@ -28,7 +28,7 @@ app.get("/sse", (req, res) => {
     'Cache-Control': 'no-cache',
     'Connection': 'keep-alive'
   });
-  
+
 
   req.on('close', () => {
     console.log('Client Disconnected!');
@@ -39,7 +39,7 @@ app.get("/sse", (req, res) => {
   });
 
   console.log('Client Connected!');
-  
+
   clients.push(res);
   res.flushHeaders();
 });
@@ -57,7 +57,7 @@ app.get("/login", (req, res) => {
 app.get("/", async (req, res) => {
   const validToken = await isValidAccessTokenAvailable();
 
-  if(!validToken){
+  if (!validToken) {
     return res.redirect("/login");
   }
 
@@ -69,7 +69,7 @@ app.post("/download", async (req, res) => {
 
   try {
     const playlistInfo = await getPlaylistInfo(playlistId);
-    
+
     const playlistName = playlistInfo.items[0].snippet.title;
     const playlistItemCount = playlistInfo.items[0].contentDetails.itemCount;
 
@@ -81,8 +81,8 @@ app.post("/download", async (req, res) => {
       thumbnail: item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url || '',
       downloaded: false
     }));
-    
-    res.render("download", { playlistName, playlistItems  });
+
+    res.render("download", { playlistName, playlistItems });
 
     // check if a folder named playlistName exists inside downloads, if not create it
     await fsp.mkdir(`downloads/${playlistName.replace(/[<>:"\/\\|?*]+/g, '_')}`, { recursive: true });
@@ -94,7 +94,7 @@ app.post("/download", async (req, res) => {
         await download(item.link, `downloads/${playlistName.replace(/[<>:"\/\\|?*]+/g, '_')}/${item.title}.mp3`);
         console.log(`Downloaded: ${item.title}`);
         item.downloaded = true;
-        
+
         broadcastMessage({ index: i, id: item.videoId, title: item.title, status: "downloaded" });
       } catch (error) {
         console.log(`Error downloading ${item.title}:`, error);
@@ -115,32 +115,60 @@ app.get("/single", async (req, res) => {
   res.sendStatus(200);
 
   console.log(`Downloading Single: ${name}`);
-  
+
   await download(url, `downloads/singles/${name}.mp3`);
   console.log(`Downloaded Single: ${name}`);
-  
+
 });
 
-app.get("/single-form", async(req, res) => {
+app.get("/single-form", async (req, res) => {
   return res.render('single');
 });
 
 app.post("/single-form", async (req, res) => {
-  const { url, name } = req.body;
+  let { url, name, directoryName } = req.body;
 
   const qp = new URL(url);
   const videoId = qp.searchParams.get("v");
 
   res.sendStatus(200);
 
-  console.log(`Downloading Single: ${name}`);
-  
-  const dUrl = `https://www.youtube.com/watch?v=${videoId}`;
-  
-  await download(dUrl, `downloads/singles/${name}.mp3`);
-  console.log(`Downloaded Single: ${name}`);
+  try {
+    if (!name || name.trim() === '') {
+      const videoInfo = await getVideoInfo(videoId);
+      if (videoInfo.items && videoInfo.items.length > 0) {
+        name = videoInfo.items[0].snippet.title;
+      } else {
+        name = "Unknown_Video";
+      }
+    }
 
-})
+    // Sanitize the name
+    name = name.replace(/[<>:"\/\\|?*]+/g, '_');
+
+    let dirPath = "downloads/singles";
+    if (directoryName && directoryName.trim() !== '') {
+      const sanitizedDir = directoryName.trim().replace(/[<>:"\/\\|?*]+/g, '_');
+      dirPath = `downloads/${sanitizedDir}`;
+    }
+
+    // Ensure directory exists
+    await fsp.mkdir(dirPath, { recursive: true });
+
+    console.log(`Downloading Single: ${name} to ${dirPath}`);
+    broadcastMessage({ index: 0, id: videoId, title: name, status: "downloading" });
+
+    const dUrl = `https://www.youtube.com/watch?v=${videoId}`;
+
+    await download(dUrl, `${dirPath}/${name}.mp3`);
+    console.log(`Downloaded Single: ${name}`);
+    broadcastMessage({ index: 0, id: videoId, title: name, status: "downloaded" });
+  } catch (error) {
+    console.log(`Error downloading single (${url}):`, error);
+    broadcastMessage({ index: 0, id: videoId, title: name || "Unknown_Video", status: "error" });
+  }
+
+});
 
 app.get("/auth/callback/google", async (req, res) => {
   const code = req.query.code;
@@ -161,17 +189,17 @@ async function isValidAccessTokenAvailable() {
     const credFile = await fsp.readFile("tokens.json", "utf-8");
     const tokens = JSON.parse(credFile);
 
-    if(tokens.expiry_date && tokens.expiry_date > (Date.now() - (10 * 60 * 1000))) {
+    if (tokens.expiry_date && tokens.expiry_date > (Date.now() - (10 * 60 * 1000))) {
       return true;
     }
 
-    if(tokens.refresh_token) {
+    if (tokens.refresh_token) {
       const refreshed = await refreshAccessToken();
       return refreshed;
     }
 
   } catch (error) {
-    if(error.code === 'ENOENT') {
+    if (error.code === 'ENOENT') {
       console.log("No tokens.json file found.");
     } else {
       console.log(error);
@@ -248,6 +276,20 @@ async function getPlaylistInfo(playlistId) {
   return response.data;
 }
 
+async function getVideoInfo(videoId) {
+  const accessToken = await getAccessToken();
+  const response = await axios.get('https://www.googleapis.com/youtube/v3/videos', {
+    params: {
+      part: 'snippet',
+      id: videoId
+    },
+    headers: {
+      Authorization: `Bearer ${accessToken}`
+    }
+  });
+  return response.data;
+}
+
 async function getPlaylistItems(playlistId, maxResults = 50, pageToken = null) {
   const accessToken = await getAccessToken();
   const params = {
@@ -255,7 +297,7 @@ async function getPlaylistItems(playlistId, maxResults = 50, pageToken = null) {
     playlistId: playlistId,
     maxResults: maxResults
   };
-  if(pageToken) {
+  if (pageToken) {
     params.pageToken = pageToken;
   }
   const response = await axios.get('https://www.googleapis.com/youtube/v3/playlistItems', {
@@ -277,6 +319,6 @@ async function refreshAccessToken() {
     return true;
   } catch (error) {
     console.error("Error refreshing access token:", error);
-    return false;    
+    return false;
   }
 }
